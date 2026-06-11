@@ -1,0 +1,11 @@
+{
+  "name": "project-todo",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "dev": "pnpm --dir apps/client tauri dev",
+    "dev:web": "pnpm --dir apps/client dev",
+    "build": "pnpm --dir apps/client build",
+    "build:desktop": "pnpm --dir apps/client tauri build"
+  }
+}

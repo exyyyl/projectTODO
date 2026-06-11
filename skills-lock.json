@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "gsap": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/gsap/SKILL.md",
+      "computedHash": "ef2658b3705d3fd5c8e38d197b31521553a0bee3b40bda2ab70bf22bd6b88854"
+    },
+    "react-best-practices": {
+      "source": "vercel-labs/vercel-plugin",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "bdb13a3a239c067136b39cf77a34462ccc0dd4645d440362182409dcfd331221"
+    },
+    "tailwind-best-practices": {
+      "source": "mastra-ai/mastra",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/tailwind-best-practices/SKILL.md",
+      "computedHash": "b5720fe165b13c35122f15fa78cea523e9dda48e666fcc71daf1ba71827f0386"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    }
+  }
+}
