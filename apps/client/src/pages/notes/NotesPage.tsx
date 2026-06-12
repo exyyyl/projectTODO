@@ -1,20 +1,10 @@
-import {
-  ArrowLeft,
-  Bold,
-  FileText,
-  Italic,
-  List,
-  MoreHorizontal,
-  Plus,
-  Redo2,
-  Strikethrough,
-  Undo2,
-} from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useAppStore } from "@/app/model/use-app-store";
 import { Button } from "@/components/ui/button";
 import type { NoteId } from "@/entities/note/model/types";
+import { NoteEditor } from "@/features/note-editor/NoteEditor";
 import { WorkspacePageLayout } from "@/shared/ui/workspace-page-layout";
 
 export function NotesPage() {
@@ -48,54 +38,11 @@ export function NotesPage() {
 
   if (openNote) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-background">
-        <header className="flex h-12 shrink-0 items-center justify-between border-b px-3">
-          <div className="flex min-w-0 items-center gap-1">
-            <Button aria-label="Назад к заметкам" onClick={() => setOpenNoteId(null)} size="icon-sm" variant="ghost">
-              <ArrowLeft />
-            </Button>
-            <div className="mx-1 h-5 w-px bg-border" />
-            <span className="max-w-64 truncate text-sm font-medium">
-              {openNote.title || "Без названия"}
-            </span>
-            <span className="ml-2 text-xs text-muted-foreground">Сохранено</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button aria-label="Отменить" size="icon-sm" variant="ghost"><Undo2 /></Button>
-            <Button aria-label="Повторить" size="icon-sm" variant="ghost"><Redo2 /></Button>
-            <div className="mx-1 h-5 w-px bg-border" />
-            <Button aria-label="Полужирный" size="icon-sm" variant="ghost"><Bold /></Button>
-            <Button aria-label="Курсив" size="icon-sm" variant="ghost"><Italic /></Button>
-            <Button aria-label="Зачёркнутый" size="icon-sm" variant="ghost"><Strikethrough /></Button>
-            <Button aria-label="Список" size="icon-sm" variant="ghost"><List /></Button>
-            <div className="mx-1 h-5 w-px bg-border" />
-            <Button aria-label="Другие действия" size="icon-sm" variant="ghost"><MoreHorizontal /></Button>
-          </div>
-        </header>
-
-        <main className="min-h-0 flex-1 overflow-y-auto">
-          <article className="mx-auto min-h-full max-w-3xl px-10 pb-32 pt-16">
-            <input
-              aria-label="Заголовок заметки"
-              className="w-full bg-transparent text-4xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground"
-              onChange={(event) => updateNote(openNote.id, { title: event.target.value })}
-              placeholder="Без названия"
-              value={openNote.title}
-            />
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="rounded-md bg-muted px-1.5 py-0.5">{openNote.tag}</span>
-              <span>Обновлено {openNote.updatedAt.toLowerCase()}</span>
-            </div>
-            <textarea
-              aria-label="Содержимое заметки"
-              className="mt-10 min-h-[60vh] w-full resize-none bg-transparent text-base leading-8 text-foreground outline-none placeholder:text-muted-foreground"
-              onChange={(event) => updateNote(openNote.id, { content: event.target.value })}
-              placeholder="Начните писать или нажмите / для команд..."
-              value={openNote.content}
-            />
-          </article>
-        </main>
-      </div>
+      <NoteEditor
+        note={openNote}
+        onBack={() => setOpenNoteId(null)}
+        onUpdate={(changes) => updateNote(openNote.id, changes)}
+      />
     );
   }
 

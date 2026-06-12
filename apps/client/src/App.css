@@ -5,6 +5,97 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.theme-transition-blocked *,
+.theme-transition-blocked *::before,
+.theme-transition-blocked *::after {
+    transition: none !important;
+}
+
+.project-markdown-editor {
+    --basePageBg: transparent;
+    --baseBase: var(--background);
+    --baseBgSubtle: var(--muted);
+    --baseBg: var(--muted);
+    --baseBgHover: var(--accent);
+    --baseBgActive: var(--accent);
+    --baseLine: var(--border);
+    --baseBorder: var(--border);
+    --baseBorderHover: var(--ring);
+    --baseSolid: var(--muted-foreground);
+    --baseSolidHover: var(--foreground);
+    --baseText: var(--muted-foreground);
+    --baseTextContrast: var(--foreground);
+    --accentBase: var(--background);
+    --accentBgSubtle: var(--muted);
+    --accentBg: var(--muted);
+    --accentBgHover: var(--accent);
+    --accentBgActive: var(--accent);
+    --accentLine: var(--border);
+    --accentBorder: var(--border);
+    --accentBorderHover: var(--ring);
+    --accentSolid: var(--foreground);
+    --accentSolidHover: var(--foreground);
+    --accentText: var(--foreground);
+    --accentTextContrast: var(--foreground);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+}
+
+.project-markdown-editor .project-markdown-toolbar {
+    background: color-mix(in oklch, var(--background), var(--muted) 30%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    position: sticky;
+    top: 0.75rem;
+    z-index: 10;
+}
+
+.project-markdown-editor .project-markdown-content {
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.8;
+    min-height: calc(100vh - 300px);
+    padding: 0;
+}
+
+.project-markdown-editor .project-markdown-content:focus {
+    outline: none;
+}
+
+.project-markdown-editor .project-markdown-content h1,
+.project-markdown-editor .project-markdown-content h2,
+.project-markdown-editor .project-markdown-content h3 {
+    font-weight: 650;
+    letter-spacing: -0.025em;
+}
+
+.compact {
+    font-size: 14px;
+}
+
+.compact [data-slot="button"] {
+    font-size: 0.75rem;
+}
+
+.compact [data-slot="button"][data-size="default"] {
+    height: 1.75rem;
+}
+
+.compact [data-slot="button"][data-size="sm"] {
+    height: 1.5rem;
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
@@ -129,6 +220,8 @@
     }
   html {
     @apply font-sans;
+    background: var(--background);
+    color: var(--foreground);
     }
   html, body, #root {
     @apply h-full overflow-hidden;

@@ -1,10 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html class="theme-transition-blocked" lang="ru">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri + React + Typescript</title>
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        let preferences = {};
+
+        try {
+          const persisted = JSON.parse(localStorage.getItem("project-todo-state") || "{}");
+          preferences = persisted.state || {};
+        } catch {
+          preferences = {};
+        }
+
+        const theme = preferences.themePreference || "dark";
+        const isDark =
+          theme === "dark" ||
+          (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+        root.classList.toggle("dark", isDark);
+        root.classList.toggle("compact", Boolean(preferences.isCompactMode));
+        root.classList.toggle("reduce-motion", preferences.areAnimationsEnabled === false);
+        root.style.colorScheme = isDark ? "dark" : "light";
+      })();
+    </script>
+    <title>Project TODO</title>
   </head>
 
   <body>

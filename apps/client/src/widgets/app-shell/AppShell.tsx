@@ -24,6 +24,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/app/model/use-app-store";
 import { Button } from "@/components/ui/button";
 import { WorkspaceSwitcher } from "@/features/workspace-switcher/WorkspaceSwitcher";
+import { CommandPalette } from "@/features/command-palette/CommandPalette";
+import { SettingsPage, SettingsSidebar, type SettingsSection } from "@/features/settings/SettingsView";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { sidebarByView } from "@/shared/config/navigation";
 
@@ -48,13 +50,21 @@ const layoutOptions = [
 ] as const;
 
 export function AppShell() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection>("general");
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const layoutRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarContentRef = useRef<HTMLDivElement>(null);
+  const previousSidebarStateRef = useRef<boolean | null>(null);
   const activeView = useAppStore((state) => state.activeView);
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const activeSidebarItem = useAppStore((state) => state.activeSidebarItem[activeView]);
   const setActiveView = useAppStore((state) => state.setActiveView);
+  const createNote = useAppStore((state) => state.createNote);
+  const createTask = useAppStore((state) => state.createTask);
+  const areAnimationsEnabled = useAppStore((state) => state.areAnimationsEnabled);
   const setActiveSidebarItem = useAppStore((state) => state.setActiveSidebarItem);
   const sidebarSections = sidebarByView[activeView];
 
@@ -67,7 +77,16 @@ export function AppShell() {
       return;
     }
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (previousSidebarStateRef.current === null || previousSidebarStateRef.current === isSidebarOpen) {
+      previousSidebarStateRef.current = isSidebarOpen;
+      gsap.set(layout, { gridTemplateColumns: isSidebarOpen ? "240px minmax(0, 1fr)" : "0px minmax(0, 1fr)" });
+      gsap.set(sidebar, { visibility: isSidebarOpen ? "visible" : "hidden" });
+      gsap.set(sidebarContent, { x: 0, autoAlpha: 1 });
+      return;
+    }
+
+    previousSidebarStateRef.current = isSidebarOpen;
+    const reduceMotion = !areAnimationsEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timeline = gsap.timeline({
       defaults: {
         duration: reduceMotion ? 0 : 0.28,
@@ -98,7 +117,34 @@ export function AppShell() {
     return () => {
       timeline.kill();
     };
-  }, [isSidebarOpen]);
+  }, [areAnimationsEnabled, isSidebarOpen]);
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      if (event.defaultPrevented || !(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === "k") {
+        event.preventDefault();
+        setIsCommandPaletteOpen(true);
+      } else if (key === "n" && !event.shiftKey) {
+        event.preventDefault();
+        createNote();
+      } else if (key === "t" && event.shiftKey) {
+        event.preventDefault();
+        createTask("Новая задача");
+      } else if (event.key === "\\") {
+        event.preventDefault();
+        setSidebarOpen(!useAppStore.getState().isSidebarOpen);
+      }
+    }
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [createNote, createTask, setSidebarOpen]);
 
   return (
     <div className="grid h-full grid-rows-[48px_minmax(0,1fr)] bg-background">
@@ -107,7 +153,7 @@ export function AppShell() {
           <Button
             aria-label={isSidebarOpen ? "Скрыть сайдбар" : "Показать сайдбар"}
             aria-pressed={!isSidebarOpen}
-            onClick={() => setIsSidebarOpen((value) => !value)}
+            onClick={() => setSidebarOpen(!isSidebarOpen)}
             size="icon-sm"
             variant="ghost"
           >
@@ -120,7 +166,7 @@ export function AppShell() {
           >
           {layoutOptions.map((option) => {
             const Icon = option.icon;
-            const isActive = activeView === option.id;
+            const isActive = !isSettingsOpen && activeView === option.id;
 
             return (
               <Button
@@ -131,7 +177,10 @@ export function AppShell() {
                     : "text-muted-foreground"
                 }
                 key={option.id}
-                onClick={() => setActiveView(option.id)}
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setActiveView(option.id);
+                }}
                 size="sm"
                 variant="ghost"
               >
@@ -142,17 +191,21 @@ export function AppShell() {
           })}
           </div>
         </div>
-        <Button className="w-64 justify-start text-muted-foreground" variant="outline">
+        <Button className="w-64 justify-start text-muted-foreground" onClick={() => setIsCommandPaletteOpen(true)} variant="outline">
           <Search />
           Найти что угодно
           <kbd className="ml-auto text-[11px] text-muted-foreground">Ctrl K</kbd>
         </Button>
       </header>
 
-      <div ref={layoutRef} className="grid min-h-0 grid-cols-[240px_minmax(0,1fr)]">
-        <aside ref={sidebarRef} className="min-h-0 overflow-hidden border-r bg-sidebar text-sidebar-foreground">
+      <div ref={layoutRef} className="grid h-full min-h-0 overflow-hidden grid-cols-[240px_minmax(0,1fr)]">
+        <aside ref={sidebarRef} className="h-full min-h-0 overflow-hidden border-r bg-sidebar text-sidebar-foreground">
           <div ref={sidebarContentRef} className="flex h-full min-h-0 w-60 flex-col">
-          <div className="flex h-12 items-center border-b px-2">
+          {isSettingsOpen ? (
+            <SettingsSidebar active={activeSettingsSection} onChange={setActiveSettingsSection} />
+          ) : (
+            <>
+          <div className="flex h-12 shrink-0 items-center border-b px-2">
             <WorkspaceSwitcher />
           </div>
 
@@ -196,23 +249,33 @@ export function AppShell() {
             ))}
           </div>
 
-          <div className="space-y-0.5 border-t p-2">
+          <div className="shrink-0 space-y-0.5 border-t p-2">
             <Button className="w-full justify-start text-muted-foreground" variant="ghost">
               <Archive />
               Архив
             </Button>
-            <Button className="w-full justify-start text-muted-foreground" variant="ghost">
+            <Button
+              className="w-full justify-start text-muted-foreground"
+              onClick={() => {
+                setSidebarOpen(true);
+                setIsSettingsOpen(true);
+              }}
+              variant="ghost"
+            >
               <Settings />
               Настройки
             </Button>
           </div>
+            </>
+          )}
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-col">
-          <WorkspacePage />
+        <main className="flex h-full min-h-0 min-w-0 overflow-hidden flex-col">
+          {isSettingsOpen ? <SettingsPage active={activeSettingsSection} /> : <WorkspacePage />}
         </main>
       </div>
+      <CommandPalette onOpenChange={setIsCommandPaletteOpen} open={isCommandPaletteOpen} />
     </div>
   );
 }

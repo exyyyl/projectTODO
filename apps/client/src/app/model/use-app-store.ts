@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 import type { Asset, AssetId } from "@/entities/asset/model/types";
 import type { Note, NoteId } from "@/entities/note/model/types";
@@ -6,9 +7,15 @@ import type { Task, TaskId, TaskStatus } from "@/entities/task/model/types";
 import type { Workspace, WorkspaceId } from "@/entities/workspace/model/types";
 
 export type WorkspaceView = "home" | "notes" | "tasks" | "files";
+export type ThemePreference = "dark" | "light" | "system";
 
 interface AppState {
   activeView: WorkspaceView;
+  themePreference: ThemePreference;
+  isCompactMode: boolean;
+  areAnimationsEnabled: boolean;
+  isSidebarOpen: boolean;
+  hasHydrated: boolean;
   activeSidebarItem: Record<WorkspaceView, string>;
   workspaces: Workspace[];
   activeWorkspaceId: WorkspaceId;
@@ -24,6 +31,12 @@ interface AppState {
   createAssetCollection: (name: string) => void;
   setActiveWorkspace: (workspaceId: WorkspaceId) => void;
   setActiveView: (view: WorkspaceView) => void;
+  setThemePreference: (theme: ThemePreference) => void;
+  setCompactMode: (isCompact: boolean) => void;
+  setAnimationsEnabled: (areEnabled: boolean) => void;
+  setSidebarOpen: (isOpen: boolean) => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
+  resetLocalData: () => void;
   setActiveSidebarItem: (view: WorkspaceView, itemId: string) => void;
   setActiveNote: (noteId: NoteId) => void;
   updateNote: (noteId: NoteId, changes: Partial<Pick<Note, "title" | "content">>) => void;
@@ -31,8 +44,15 @@ interface AppState {
   updateAsset: (assetId: AssetId, changes: Partial<Pick<Asset, "name" | "collection" | "tags">>) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   activeView: "home",
+  themePreference: "dark",
+  isCompactMode: false,
+  areAnimationsEnabled: true,
+  isSidebarOpen: true,
+  hasHydrated: false,
   activeWorkspaceId: "personal",
   workspaces: [
     {
@@ -201,6 +221,15 @@ export const useAppStore = create<AppState>((set) => ({
       activeView: "home",
     }),
   setActiveView: (activeView) => set({ activeView }),
+  setThemePreference: (themePreference) => set({ themePreference }),
+  setCompactMode: (isCompactMode) => set({ isCompactMode }),
+  setAnimationsEnabled: (areAnimationsEnabled) => set({ areAnimationsEnabled }),
+  setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+  setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+  resetLocalData: () => {
+    localStorage.removeItem("project-todo-state");
+    window.location.reload();
+  },
   setActiveSidebarItem: (view, itemId) =>
     set((state) => ({
       activeSidebarItem: {
@@ -235,7 +264,31 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       assets: state.assets.map((asset) => (asset.id === assetId ? { ...asset, ...changes } : asset)),
     })),
-}));
+    }),
+    {
+      name: "project-todo-state",
+      version: 1,
+      partialize: (state) => ({
+        activeView: state.activeView,
+        themePreference: state.themePreference,
+        isCompactMode: state.isCompactMode,
+        areAnimationsEnabled: state.areAnimationsEnabled,
+        isSidebarOpen: state.isSidebarOpen,
+        activeSidebarItem: state.activeSidebarItem,
+        workspaces: state.workspaces,
+        activeWorkspaceId: state.activeWorkspaceId,
+        notes: state.notes,
+        tasks: state.tasks,
+        assets: state.assets.map(({ previewUrl: _previewUrl, ...asset }) => asset),
+        assetCollections: state.assetCollections,
+        activeNoteIdByWorkspace: state.activeNoteIdByWorkspace,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
+  ),
+);
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) {
