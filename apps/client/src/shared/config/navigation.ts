@@ -51,7 +51,7 @@ export const sidebarByView: Record<WorkspaceView, SidebarSection[]> = {
       items: [
         { id: "all-notes", label: "Все заметки", icon: "file" },
         { id: "favorite-notes", label: "Избранные", icon: "star" },
-        { id: "note-templates", label: "Шаблоны", icon: "layout" },
+        { id: "trash-notes", label: "Корзина", icon: "archive" },
       ],
     },
     {

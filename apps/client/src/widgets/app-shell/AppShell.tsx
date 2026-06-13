@@ -63,9 +63,11 @@ export function AppShell() {
   const activeSidebarItem = useAppStore((state) => state.activeSidebarItem[activeView]);
   const setActiveView = useAppStore((state) => state.setActiveView);
   const createNote = useAppStore((state) => state.createNote);
+  const createNoteNotebook = useAppStore((state) => state.createNoteNotebook);
   const createTask = useAppStore((state) => state.createTask);
   const areAnimationsEnabled = useAppStore((state) => state.areAnimationsEnabled);
   const setActiveSidebarItem = useAppStore((state) => state.setActiveSidebarItem);
+  const noteNotebooks = useAppStore((state) => state.noteNotebooks[state.activeWorkspaceId] ?? []);
   const sidebarSections = sidebarByView[activeView];
 
   useEffect(() => {
@@ -216,14 +218,30 @@ export function AppShell() {
                   <div className="flex h-7 items-center justify-between px-2 text-xs font-medium text-muted-foreground">
                     <span>{section.label}</span>
                     {section.addLabel && (
-                      <Button aria-label={section.addLabel} size="icon-xs" variant="ghost">
+                      <Button
+                        aria-label={section.addLabel}
+                        onClick={() => {
+                          if (section.id !== "notebooks") return;
+                          const name = window.prompt("Название блокнота");
+                          if (name) createNoteNotebook(name);
+                        }}
+                        size="icon-xs"
+                        variant="ghost"
+                      >
                         <Plus />
                       </Button>
                     )}
                   </div>
                 )}
                 <nav aria-label={section.label ?? "Навигация раздела"} className="space-y-0.5">
-                  {section.items.map((item) => {
+                  {(section.id === "notebooks"
+                    ? noteNotebooks.map((notebook) => ({
+                        id: notebook === "Проект" ? "project-notes" : notebook === "Учёба" ? "study-notes" : `notebook:${notebook}`,
+                        label: notebook,
+                        icon: "folder" as const,
+                      }))
+                    : section.items
+                  ).map((item) => {
                     const Icon = icons[item.icon];
                     const isActive = activeSidebarItem === item.id;
 

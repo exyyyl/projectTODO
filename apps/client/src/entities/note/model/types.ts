@@ -8,5 +8,10 @@ export interface Note {
   title: string;
   content: string;
   tag: string;
+  notebook: string;
+  isFavorite: boolean;
+  deletedAt?: string;
   updatedAt: string;
 }
+
+export type NoteChanges = Partial<Omit<Note, "id" | "workspaceId">>;
