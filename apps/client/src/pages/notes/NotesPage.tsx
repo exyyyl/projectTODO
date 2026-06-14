@@ -1,9 +1,19 @@
-import { FileText, Plus, Search, Star } from "lucide-react";
+import { FileText, Plus, Search, Star, X } from "lucide-react";
 import { gsap } from "gsap";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppStore } from "@/app/model/use-app-store";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { NoteEditor } from "@/features/note-editor/NoteEditor";
 
 const DEFAULT_PANEL_WIDTH = 330;
@@ -14,7 +24,11 @@ const PANEL_WIDTH_KEY = "project-todo:notes-panel-width";
 
 export function NotesPage() {
   const panelRef = useRef<HTMLElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSearchResult, setSelectedSearchResult] = useState(0);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [panelWidth, setPanelWidth] = useState(() => {
     const saved = Number(window.localStorage.getItem(PANEL_WIDTH_KEY));
     return Number.isFinite(saved) && saved >= MIN_PANEL_WIDTH ? saved : DEFAULT_PANEL_WIDTH;
@@ -29,7 +43,7 @@ export function NotesPage() {
   const setActiveSidebarItem = useAppStore((state) => state.setActiveSidebarItem);
   const setActiveNote = useAppStore((state) => state.setActiveNote);
   const updateNote = useAppStore((state) => state.updateNote);
-  const notes = useMemo(
+  const filteredNotes = useMemo(
     () => allNotes.filter((note) => {
       if (note.workspaceId !== activeWorkspaceId) return false;
       if (activeNotesFilter === "trash-notes") return Boolean(note.deletedAt);
@@ -42,6 +56,16 @@ export function NotesPage() {
     }),
     [activeNotesFilter, activeWorkspaceId, allNotes],
   );
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase("ru");
+  const notes = useMemo(() => {
+    if (!normalizedSearchQuery) return filteredNotes;
+
+    return filteredNotes.filter((note) =>
+      `${note.title} ${note.content} ${note.notebook} ${note.tag}`
+        .toLocaleLowerCase("ru")
+        .includes(normalizedSearchQuery),
+    );
+  }, [filteredNotes, normalizedSearchQuery]);
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0];
 
   useEffect(() => {
@@ -55,6 +79,22 @@ export function NotesPage() {
       setActiveNote(notes[0].id);
     }
   }, [activeNoteId, notes, setActiveNote]);
+
+  useEffect(() => {
+    setSelectedSearchResult(0);
+  }, [searchQuery, activeNotesFilter]);
+
+  useEffect(() => {
+    function focusSearch(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLocaleLowerCase() !== "f") return;
+      event.preventDefault();
+      if (!isPanelOpen) animatePanel(true);
+      window.setTimeout(() => searchInputRef.current?.focus(), isPanelOpen ? 0 : 260);
+    }
+
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, [isPanelOpen, panelWidth]);
 
   function animatePanel(open: boolean) {
     const panel = panelRef.current;
@@ -133,10 +173,31 @@ export function NotesPage() {
     if (!isPanelOpen) animatePanel(true);
   }
 
-  function handleDeletePermanently(noteId: string) {
-    if (window.confirm("Удалить заметку навсегда? Это действие нельзя отменить.")) {
-      deleteNotePermanently(noteId);
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSearchQuery("");
+      searchInputRef.current?.blur();
+      return;
     }
+
+    if (!notes.length) return;
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      setSelectedSearchResult((current) => (current + direction + notes.length) % notes.length);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      setActiveNote(notes[selectedSearchResult]?.id ?? notes[0].id);
+      searchInputRef.current?.blur();
+    }
+  }
+
+  function handleDeletePermanently(noteId: string) {
+    setNoteToDelete(noteId);
   }
 
   const sectionTitle =
@@ -168,17 +229,41 @@ export function NotesPage() {
           )}
         </header>
         <div className="border-b p-2">
-          <button className="flex h-7 w-full items-center gap-2 rounded-md px-2 text-xs text-muted-foreground hover:bg-sidebar-accent" type="button">
+          <label className="flex h-7 w-full items-center gap-2 rounded-md border border-transparent px-2 text-xs text-muted-foreground transition-colors focus-within:border-border focus-within:bg-sidebar-accent/60">
             <Search className="size-3.5" />
-            Найти заметку
-            <kbd className="ml-auto text-[10px]">Ctrl K</kbd>
-          </button>
+            <input
+              aria-label="Найти заметку"
+              className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Найти заметку"
+              ref={searchInputRef}
+              value={searchQuery}
+            />
+            {searchQuery ? (
+              <button
+                aria-label="Очистить поиск"
+                className="grid size-5 shrink-0 place-items-center rounded hover:bg-muted"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                type="button"
+              >
+                <X className="size-3" />
+              </button>
+            ) : (
+              <kbd className="ml-auto shrink-0 text-[10px]">Ctrl F</kbd>
+            )}
+          </label>
         </div>
         <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
-          {notes.map((note) => (
+          {notes.map((note, index) => (
             <button
               className={`group flex w-full items-start gap-2.5 rounded-md px-2.5 py-2.5 text-left transition-colors ${
-                note.id === activeNote?.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/60"
+                (normalizedSearchQuery ? index === selectedSearchResult : note.id === activeNote?.id)
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/60"
               }`}
               key={note.id}
               onClick={() => setActiveNote(note.id)}
@@ -195,6 +280,13 @@ export function NotesPage() {
               </span>
             </button>
           ))}
+          {normalizedSearchQuery && !notes.length && (
+            <div className="px-3 py-10 text-center">
+              <Search className="mx-auto size-5 text-muted-foreground/60" />
+              <p className="mt-3 text-xs font-medium">Ничего не найдено</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Попробуйте изменить запрос</p>
+            </div>
+          )}
         </div>
         <div
           aria-label="Изменить ширину списка заметок"
@@ -221,7 +313,14 @@ export function NotesPage() {
           />
         ) : (
           <div className="grid flex-1 place-items-center text-sm text-muted-foreground">
-            {activeNotesFilter === "trash-notes" ? (
+            {normalizedSearchQuery ? (
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Заметки не найдены</p>
+                <button className="mt-2 text-xs hover:text-foreground" onClick={() => setSearchQuery("")} type="button">
+                  Очистить поиск
+                </button>
+              </div>
+            ) : activeNotesFilter === "trash-notes" ? (
               <span>Корзина пуста</span>
             ) : (
               <Button onClick={handleCreateNote} variant="outline"><Plus />Создать первую заметку</Button>
@@ -229,6 +328,30 @@ export function NotesPage() {
           </div>
         )}
       </section>
+      <AlertDialog open={Boolean(noteToDelete)} onOpenChange={(open) => {
+        if (!open) setNoteToDelete(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить заметку навсегда?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Заметка будет удалена с этого устройства без возможности восстановления.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (noteToDelete) deleteNotePermanently(noteToDelete);
+                setNoteToDelete(null);
+              }}
+              variant="destructive"
+            >
+              Удалить заметку
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

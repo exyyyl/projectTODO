@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import type { Asset, AssetId } from "@/entities/asset/model/types";
-import { clearStoredNotes, deleteStoredNote, saveNote, scheduleNoteSave } from "@/entities/note/api/note-repository";
+import { clearStoredNotes, deleteStoredNote, deleteStoredWorkspaceNotes, saveNote, scheduleNoteSave } from "@/entities/note/api/note-repository";
 import type { Note, NoteChanges, NoteId } from "@/entities/note/model/types";
 import type { Task, TaskId, TaskStatus } from "@/entities/task/model/types";
 import type { Workspace, WorkspaceId } from "@/entities/workspace/model/types";
@@ -29,6 +29,8 @@ interface AppState {
   noteNotebooks: Record<WorkspaceId, string[]>;
   activeNoteIdByWorkspace: Record<WorkspaceId, NoteId | undefined>;
   createWorkspace: (name: string) => void;
+  renameWorkspace: (workspaceId: WorkspaceId, name: string) => void;
+  deleteWorkspace: (workspaceId: WorkspaceId) => void;
   createNote: () => void;
   createTask: (title: string) => void;
   importAssets: (files: File[]) => void;
@@ -166,6 +168,35 @@ export const useAppStore = create<AppState>()(
         workspaces: [...state.workspaces, workspace],
         activeWorkspaceId: workspace.id,
         activeView: "home",
+      };
+    }),
+  renameWorkspace: (workspaceId, name) =>
+    set((state) => ({
+      workspaces: state.workspaces.map((workspace) =>
+        workspace.id === workspaceId
+          ? { ...workspace, name: name.trim(), accent: name.trim().charAt(0).toUpperCase() }
+          : workspace,
+      ),
+    })),
+  deleteWorkspace: (workspaceId) =>
+    set((state) => {
+      if (state.workspaces.length <= 1) return state;
+      void deleteStoredWorkspaceNotes(workspaceId).catch((error) => console.error("Failed to delete workspace notes", error));
+      const workspaces = state.workspaces.filter((workspace) => workspace.id !== workspaceId);
+      const activeWorkspaceId = state.activeWorkspaceId === workspaceId ? workspaces[0].id : state.activeWorkspaceId;
+      const { [workspaceId]: _deletedNoteId, ...activeNoteIdByWorkspace } = state.activeNoteIdByWorkspace;
+      const { [workspaceId]: _deletedNotebooks, ...noteNotebooks } = state.noteNotebooks;
+      const { [workspaceId]: _deletedCollections, ...assetCollections } = state.assetCollections;
+
+      return {
+        workspaces,
+        activeWorkspaceId,
+        notes: state.notes.filter((note) => note.workspaceId !== workspaceId),
+        tasks: state.tasks.filter((task) => task.workspaceId !== workspaceId),
+        assets: state.assets.filter((asset) => asset.workspaceId !== workspaceId),
+        activeNoteIdByWorkspace,
+        noteNotebooks,
+        assetCollections,
       };
     }),
   createNote: () =>

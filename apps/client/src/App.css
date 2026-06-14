@@ -11,6 +11,27 @@
     transition: none !important;
 }
 
+.soon-control {
+    position: relative;
+}
+
+.soon-control[data-soon]:hover::after {
+    background: var(--popover);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    color: var(--popover-foreground);
+    content: attr(data-soon);
+    font-size: 0.6875rem;
+    left: 50%;
+    padding: 0.25rem 0.4375rem;
+    pointer-events: none;
+    position: absolute;
+    top: calc(100% + 0.375rem);
+    transform: translateX(-50%);
+    white-space: nowrap;
+    z-index: 100;
+}
+
 .project-selection-toolbar {
     align-items: center;
     background: var(--popover);

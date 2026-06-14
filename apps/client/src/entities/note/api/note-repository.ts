@@ -105,6 +105,12 @@ export async function deleteStoredNote(noteId: NoteId) {
   await database.execute("DELETE FROM notes WHERE id = $1", [noteId]);
 }
 
+export async function deleteStoredWorkspaceNotes(workspaceId: string) {
+  if (!isTauriRuntime()) return;
+  const db = await getDatabase();
+  await db.execute("DELETE FROM notes WHERE workspace_id = $1", [workspaceId]);
+}
+
 export function scheduleNoteSave(note: Note) {
   if (!isTauriRuntime()) return;
 

@@ -36,6 +36,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -46,6 +54,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Note, NoteChanges } from "@/entities/note/model/types";
 
 interface NoteEditorProps {
@@ -133,6 +143,8 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const [slashMenu, setSlashMenu] = useState<{ left: number; query: string; top: number } | null>(null);
   const [selectedCommand, setSelectedCommand] = useState(0);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
   const replacingContent = useRef(false);
   const editor = useEditor({
     content: note.content,
@@ -247,13 +259,18 @@ export function NoteEditor({
   function setLink() {
     if (!editor) return;
     const previousUrl = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Адрес ссылки", previousUrl ?? "https://");
-    if (url === null) return;
-    if (!url.trim()) {
+    setLinkUrl(previousUrl ?? "https://");
+    setIsLinkDialogOpen(true);
+  }
+
+  function applyLink() {
+    if (!editor) return;
+    if (!linkUrl.trim()) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl.trim() }).run();
     }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    setIsLinkDialogOpen(false);
   }
 
   return (
@@ -388,6 +405,33 @@ export function NoteEditor({
           </div>
         </div>
       )}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent>
+          <form onSubmit={(event) => {
+            event.preventDefault();
+            applyLink();
+          }}>
+            <DialogHeader>
+              <DialogTitle>Добавить ссылку</DialogTitle>
+              <DialogDescription>Укажите адрес для выделенного текста. Пустое поле удалит ссылку.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2 py-5">
+              <Label htmlFor="note-link-url">Адрес</Label>
+              <Input
+                autoFocus
+                id="note-link-url"
+                onChange={(event) => setLinkUrl(event.target.value)}
+                placeholder="https://example.com"
+                value={linkUrl}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsLinkDialogOpen(false)} type="button" variant="outline">Отмена</Button>
+              <Button type="submit">Применить</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

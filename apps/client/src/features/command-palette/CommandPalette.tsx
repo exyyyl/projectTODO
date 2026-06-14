@@ -25,13 +25,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const commands = useMemo(() => {
     const actions = [
-      ...navigationItems.map((item) => ({
+      ...navigationItems.filter((item) => import.meta.env.DEV || (item.id !== "tasks" && item.id !== "files")).map((item) => ({
         label: item.label,
         icon: item.icon,
         run: () => setActiveView(item.id),
       })),
       { label: "Создать новую заметку", icon: Plus, run: createNote },
-      { label: "Создать новую задачу", icon: Plus, run: () => createTask("Новая задача") },
+      ...(import.meta.env.DEV ? [{ label: "Создать новую задачу", icon: Plus, run: () => createTask("Новая задача") }] : []),
     ];
 
     return actions.filter((action) => action.label.toLowerCase().includes(query.toLowerCase()));

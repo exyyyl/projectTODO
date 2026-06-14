@@ -39,12 +39,17 @@ export function HomePage() {
         <section className="grid grid-cols-3 gap-4">
           {summary.map((item) => {
             const Icon = item.icon;
+            const isLocked = !import.meta.env.DEV && (item.id === "tasks" || item.id === "files");
 
             return (
               <button
-                className="group rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/40"
+                aria-label={isLocked ? `${item.label}. Скоро` : item.label}
+                className={`group rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-40 ${isLocked ? "soon-control" : ""}`}
+                data-soon={isLocked ? "Скоро" : undefined}
+                disabled={isLocked}
                 key={item.id}
                 onClick={() => setActiveView(item.id as WorkspaceView)}
+                title={isLocked ? "Скоро" : undefined}
                 type="button"
               >
                 <div className="flex items-center justify-between">
