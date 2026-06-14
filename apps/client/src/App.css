@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -11,8 +12,31 @@
     transition: none !important;
 }
 
+/* Smooth theme transition */
+html:not(.theme-transition-blocked),
+html:not(.theme-transition-blocked) * {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 250ms;
+}
+
 .soon-control {
     position: relative;
+}
+
+/* Hide scrollbars for tabs */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Prevent accidental text selection on tabs, buttons and interactive controls */
+button, [role="button"], [role="tab"], .soon-control, kbd {
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .soon-control[data-soon]:hover::after {
